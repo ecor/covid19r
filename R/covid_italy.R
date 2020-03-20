@@ -4,7 +4,7 @@ NULL
 #' @param file file (CSV format) Genetsally available on \url{https://github.com/pcm-dpc/COVID-19/blob/master/dati-regioni/dpc-covid19-ita-regioni.csv}
 #' @param regione name of the Italian Region , e.g. \code{"Lombardia"}. Please see examples for correct Italian Region names.
 #' @param start_date,end_date start and dates (optinal) for x axis  
-#' 
+#' @param layer layer that can be plotted. See defauls values.
 #' @export
 #' 
 #' @importFrom stringr str_sub
@@ -49,7 +49,14 @@ NULL
 #' out <- covid19Italy(file=out_csv,regione="Veneto",
 #' start_date=as.Date("2020-03-06"),end_date=as.Date("2020-03-12"))
 #' 
-covid19Italy <- function(file,regione="Lombardia",start_date=NA,end_date=NA) {
+#' ## To remove the non-positive tessted cases ("lA0_tamponi")
+#' layer=c("lA0_tamponi","lA1_positivi","lA2_positivi_dimessi","lB2_attualmente_positivi","lB3_attualmente_ospedalizzati","lB4_terapia_intensiva","lC5_deceduti")
+#' out <- covid19Italy(file=out_csv,regione="Lombardia",layer=layer[-1])
+#' 
+#' 
+covid19Italy <- function(file,regione="Lombardia",start_date=NA,end_date=NA,
+layer=c("lA0_tamponi","lA1_positivi","lA2_positivi_dimessi","lB2_attualmente_positivi","lB3_attualmente_ospedalizzati","lB4_terapia_intensiva","lC5_deceduti")
+) {
 	
 	##
 	value <- NULL
@@ -60,32 +67,33 @@ covid19Italy <- function(file,regione="Lombardia",start_date=NA,end_date=NA) {
 	out <- file %>% read.table(sep=",",header=TRUE,quote=NULL)
 	out$data <- as.Date(out$data)
 	out$totale_casi_viventi <- as.numeric(out$totale_casi)-as.numeric(out$deceduti)
-
+	
 	out <- out %>% melt(id=c("data","denominazione_regione"))
 	names(out)[names(out)=="data"] <- "date"
 	names(out)[names(out)=="denominazione_regione"] <- "region"
 	out <- out[!(out$variable %in% c("stato","codice_regione","lat","long")),]
 	out$value <- as.numeric(out$value)
-
-
-### http://www.cookbook-r.com/Manipulating_data/Renaming_levels_of_a_factor/
+	
+	
+	### http://www.cookbook-r.com/Manipulating_data/Renaming_levels_of_a_factor/
 	levels(out$variable)[levels(out$variable)=="tamponi"] <- "lA0_tamponi"
 	levels(out$variable)[levels(out$variable)=="totale_casi_viventi"] <- "lA1_positivi"
-###levels(out$variable)[levels(out$variable)=="dimessi_guariti_level"] <- "lA2_positivi_dimessi"
+	###levels(out$variable)[levels(out$variable)=="dimessi_guariti_level"] <- "lA2_positivi_dimessi"
 	levels(out$variable)[levels(out$variable)=="totale_attualmente_positivi"] <- "lB2_attualmente_positivi"
 	levels(out$variable)[levels(out$variable)=="totale_ospedalizzati"] <- "lB3_attualmente_ospedalizzati"
 	levels(out$variable)[levels(out$variable)=="terapia_intensiva"] <- "lB4_terapia_intensiva"
 	levels(out$variable)[levels(out$variable)=="deceduti"] <- "lC5_deceduti"
-###
-
+	###
+	
 	oo <- unique(out$variable) %>% as.character() 
 	varl <- oo[str_sub(oo,1,1)=="l"] %>% sort()
 	colrl <- c("#feedde","#fdd0a2","#fdae6b","#fd8d3c","#e6550d","#a63603")
 	names(colrl) <- varl
-###
-###
-   
+	###
+	###
+	
 	out <- out %>% filter(value>0) %>% filter(variable %in% varl) 
+	out <- out %>% filter(variable %in% layer)
 	out <- out %>% mutate(variable=as.character(variable))
 	## Filtering 
 	
@@ -93,11 +101,11 @@ covid19Italy <- function(file,regione="Lombardia",start_date=NA,end_date=NA) {
 	if (!is.na(end_date)) out <- out %>% filter(date<=end_date)
 	
 	if (tolower(regione[1]) %in% c("all","tutte")) regione <- out$region %>% unique() %>% as.character()
-
+	
 	
 	out <- out %>% filter(region %in% regione) %>% group_by(date,variable) %>% summarize(value=sum(value)) %>% as.data.frame()
 	
-
+	
 	out <- out[order(as.character(out$variable)),]
 	yrange <- range(out$value)
 	ymax <- yrange[2]
@@ -107,47 +115,47 @@ covid19Italy <- function(file,regione="Lombardia",start_date=NA,end_date=NA) {
 	maxperc <- "auto"
 	lagday <- 5
 	lockdown <- as.Date("2020-03-09")
-#### Plotting 
-
+	#### Plotting 
+	
 	out <- out %>% dcast(date ~ variable)
-
-
+	
+	
 	out[is.na(out)] <- 0
 	for (i in 2:(ncol(out)-2)) {
-	
+		
 		out[,i] <- out[,i]-out[,i+1]
-	
+		
 	}
-####
+	####
 	ratio <- out
-
-	for (i in 2:ncol(out)) {
 	
+	for (i in 2:ncol(out)) {
+		
 		ratio[-1,i] <- diff(out[,i])/out[-ncol(out),i]*100
 		ratio[1,i] <- NA
 	}
-
-
-#####
-
-
-
-
+	
+	
+	#####
+	
+	
+	
+	
 	out <- out %>% melt(id="date")
 	ratio <- ratio %>% melt(id="date")
 	names(ratio)[names(ratio)=="value"] <- "variation_perc"
-##ratio <- ratio %>% filter(date %in% (max(out$date)-1:lagday+1))
+	##ratio <- ratio %>% filter(date %in% (max(out$date)-1:lagday+1))
 	ratio <- ratio %>% filter(date %in% (lockdown+2):max(out$date))
 	if (maxperc=="auto") maxperc <- range(ratio$variation_perc,na.rm=TRUE) %>% abs() %>% max()
 	if (maxperc>100) maxperc <- 100
-
+	
 	out <- full_join(out,ratio)
-
-
+	
+	
 	out$plotted_variation_perc <- (out$variation_perc)*ydelta/maxperc+ymean
 	variation_perc_breaks <- out$variation_perc[which(out$date==max(out$date))] %>% c(as.integer(c(-1,-0.5,0,0.5,1)*maxperc)) %>% sort()
 	breaks_y <- out$value[which(out$date==max(out$date))] %>% rev()  %>% cumsum() %>% sort()
-
+	
 	breaks_x <- out$date %>% unique() %>% sort()
 	ii_labels_x <- breaks_x %>% extract(as.numeric(breaks_x-breaks_x[1])%%4==0)
 	labels_x <- breaks_x %>% as.character()
@@ -159,16 +167,16 @@ covid19Italy <- function(file,regione="Lombardia",start_date=NA,end_date=NA) {
 	gg <- gg+geom_line(aes(x=date,y=plotted_variation_perc,group=variable,linetype=variable),data=out)
 	gg <- gg+geom_point(aes(x=date,y=plotted_variation_perc,group=variable,pch=variable),data=out)
 	gg <- gg+geom_hline(yintercept=ymean,linetype=2)##
-
-##gg <- gg+
-##gg <- gg+scale_y_log10()
-
-
+	
+	##gg <- gg+
+	##gg <- gg+scale_y_log10()
+	
+	
 	gg <- gg+scale_y_continuous(breaks=breaks_y,sec.axis = sec_axis(~ . *maxperc/ydelta-maxperc/ydelta*ymean,breaks=variation_perc_breaks,name="Aumenti Giornalieri [%]"))
 	gg <- gg+scale_x_date(breaks=breaks_x,labels=labels_x)
-
+	
 	gg <- gg+xlab("Tempo")+ylab("Persone")+ggtitle(sprintf("Casi in %s",paste(regione,collapse=",")))
-
+	
 	attr(out,"ggplot") <- gg
 	return(out)
 }

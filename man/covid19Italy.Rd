@@ -5,7 +5,10 @@
 \title{Coovid19 Epidemic in a region or a group of regions of Italy}
 \usage{
 covid19Italy(file, regione = "Lombardia", start_date = NA,
-  end_date = NA)
+  end_date = NA, layer = c("lA0_tamponi", "lA1_positivi",
+  "lA2_positivi_dimessi", "lB2_attualmente_positivi",
+  "lB3_attualmente_ospedalizzati", "lB4_terapia_intensiva",
+  "lC5_deceduti"))
 }
 \arguments{
 \item{file}{file (CSV format) Genetsally available on \url{https://github.com/pcm-dpc/COVID-19/blob/master/dati-regioni/dpc-covid19-ita-regioni.csv}}
@@ -13,6 +16,8 @@ covid19Italy(file, regione = "Lombardia", start_date = NA,
 \item{regione}{name of the Italian Region , e.g. \code{"Lombardia"}. Please see examples for correct Italian Region names.}
 
 \item{start_date, end_date}{start and dates (optinal) for x axis}
+
+\item{layer}{layer that can be plotted. See defauls values.}
 }
 \description{
 Coovid19 Epidemic in a region or a group of regions of Italy
@@ -48,5 +53,10 @@ print(gg)
 ## To select a specific time period:
 out <- covid19Italy(file=out_csv,regione="Veneto",
 start_date=as.Date("2020-03-06"),end_date=as.Date("2020-03-12"))
+
+## To remove the non-positive tessted cases ("lA0_tamponi")
+layer=c("lA0_tamponi","lA1_positivi","lA2_positivi_dimessi","lB2_attualmente_positivi","lB3_attualmente_ospedalizzati","lB4_terapia_intensiva","lC5_deceduti")
+out <- covid19Italy(file=out_csv,regione="Lombardia",layer=layer[-1])
+
 
 }

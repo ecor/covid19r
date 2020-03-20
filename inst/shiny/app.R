@@ -66,8 +66,12 @@ ui <- fluidPage(theme = shinytheme("lumen"),
 				# Output: Description, lineplot, and reference
 				mainPanel(
 						plotOutput(outputId = "covi19dItalyPlot", height = "2000px"),
-						textOutput(outputId = "desc")
-				##		tags$a(href = "https://www.google.com/finance/domestic_trends", "Source: Google Domestic Trends", target = "_blank")
+	#					textOutput(outputId = "desc"),
+	#					url_github <- a("Github Data Repository", href="https://github.com/pcm-dpc")
+	#					url <- a("Presidenza del Consiglio dei Ministri - Dipartimento della Protezione Civile",href="http://www.protezionecivile.it/")
+						
+					  tags$a(href = "httpss//www.protezionecivile.gov.it", "Presidenza del Consiglio dei Ministri - Dipartimento della Protezione Civile", target = "_blank"),
+	          tags$a(href = "https://github.com/pcm-dpc", "Official Github Data Repository", target = "_blank")  
 				,width=12)
 		)
 )
@@ -97,12 +101,12 @@ server <- function(input, output) {
 	      if ("Tutte" %in% regione) regione <- "Tutte"
 				covid19Italy(file=data_csv,regione=regione,start_date=input$date[1],end_date=input$date[2]) %>% attr("ggplot") %>% print()
 	})
-	output$desc <- renderUI({
+	output$desc <- renderText({
 			  
 	      url_github <- a("Github Data Repository", href="https://github.com/pcm-dpc")
 	      url <- a("Presidenza del Consiglio dei Ministri - Dipartimento della Protezione Civile",href="http://www.protezionecivile.it/")
 				o <- paste( "Sorgente dati e rigraziamenti:",url," ; ","Protezione Civile Github Repository:",url_github)
-				tagList(o)
+				print(o)
 				})
 	
 }

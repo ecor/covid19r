@@ -7,7 +7,7 @@ Author: Emanuele Cordano
 Description: Representation of epidemiologic data of COVID-19 pandemic from several sources.
 Version: 0.1
 Repository: CRAN
-Date: 2020-03-18
+Date: 2020-03-20
 Depends: R (>= 2.13),magrittr,dplyr,ggplot2,reshape2,stringr
 Suggests: stringplus
 RoxygenNote: 6.1.1
