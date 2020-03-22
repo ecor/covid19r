@@ -64,6 +64,10 @@ layer=c("lA0_tamponi","lA1_positivi","lA2_positivi_dimessi","lB2_attualmente_pos
 	plotted_variation_perc <- NULL
 	region <- NULL
 	##
+	layer_f=c("lA0_tamponi","lA1_positivi","lA2_positivi_dimessi","lB2_attualmente_positivi","lB3_attualmente_ospedalizzati","lB4_terapia_intensiva","lC5_deceduti")
+	mlayer <- which(layer_f==sort(layer)[1])
+	layer <- layer_f[mlayer:length(layer_f)]
+	##
 	out <- file %>% read.table(sep=",",header=TRUE,quote=NULL)
 	out$data <- as.Date(out$data)
 	out$totale_casi_viventi <- as.numeric(out$totale_casi)-as.numeric(out$deceduti)
