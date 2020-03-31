@@ -2,7 +2,7 @@
 library(shiny)
 library(shinythemes)
 library(remotes)
-if (!("covid19r" %in% installed.packages()[,1])) install_github("ecor/covid19r")
+  if (!("covid19r" %in% installed.packages()[,1])) install_github("ecor/covid19r")
 library(covid19r)
 
 # if (o==FALSE) {

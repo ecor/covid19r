@@ -71,7 +71,7 @@ layer=c("lA0_tamponi","lA1_positivi","lA2_positivi_dimessi","lB2_attualmente_pos
 	out <- file %>% read.table(sep=",",header=TRUE,quote=NULL)
 	out$data <- as.Date(out$data)
 	out$totale_casi_viventi <- as.numeric(out$totale_casi)-as.numeric(out$deceduti)
-	
+	out$totale_attualmente_positivi <- out$totale_ospedalizzati+out$isolamento_domiciliare
 	out <- out %>% melt(id=c("data","denominazione_regione"))
 	names(out)[names(out)=="data"] <- "date"
 	names(out)[names(out)=="denominazione_regione"] <- "region"

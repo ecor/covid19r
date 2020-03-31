@@ -5,9 +5,9 @@ Title: COVID-19 Pandemic Data Visualization
 Type: Package
 Author: Emanuele Cordano
 Description: Representation of epidemiologic data of COVID-19 pandemic from several sources.
-Version: 0.1
+Version: 0.2
 Repository: CRAN
-Date: 2020-03-20
+Date: 2020-03-31
 Depends: R (>= 2.13),magrittr,dplyr,ggplot2,reshape2,stringr
 Suggests: stringplus
 RoxygenNote: 6.1.1
