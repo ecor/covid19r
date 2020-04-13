@@ -2,7 +2,7 @@
 library(shiny)
 library(shinythemes)
 library(remotes)
-  if (!("covid19r" %in% installed.packages()[,1])) install_github("ecor/covid19r")
+  if (!("covid19r" %in% installed.packages()[,1])) install_github("ecor/covid19r",force=TRUE)
 library(covid19r)
 
 # if (o==FALSE) {
@@ -19,7 +19,7 @@ library(covid19r)
 
 ####
 
-nord <- c("Lombardia","Veneto","Emilia Romagna",
+nord <- c("Lombardia","Veneto","Emilia-Romagna",
 "Piemonte","P.A. Trento","P.A. Bolzano","Friuli Venezia Giulia",
 "Liguria","Valle d'Aosta")
 centro <- c("Toscana","Lazio","Umbria","Marche","Abruzzo","Molise")
@@ -49,7 +49,8 @@ ui <- fluidPage(theme = shinytheme("lumen"),
 						# Select date range to be plotted
 						dateRangeInput("date", strong("Selezione Date (opzionale)"), start = "2007-01-01", end = "2017-07-31",
 								min = "2020-02-20", max = Sys.Date(),language="it",separator="a"),
-	
+						# Botton
+						actionButton("RefreshButton", "Refresh"),
 				width=12),
 				
 				# Output: Description, plot, and reference
@@ -67,7 +68,44 @@ ui <- fluidPage(theme = shinytheme("lumen"),
 server <- function(input, output) {
 	
 	output$covi19dItalyPlot <- renderPlot({
-	
+	     
+	    # if (exists("v")) {
+	    #     v <- input$goButton
+	    #     u <- v
+	    #   } else {
+	    #     v <- input$goButton
+	    #     u <- 0
+	    #   }
+	    # 
+	    #   if (u!=v) {
+	    #     print(u)
+	    #     print(v)
+	    #     remove.packages("covid19r")
+	    #     install_github("ecor/covid19r")
+	    #     library(covid19r)
+	    #     
+	    #   }
+	      observeEvent(input$RefreshButton,{
+	        
+	        remove.packages("covid19r")
+	        install_github("ecor/covid19r")
+	        library(covid19r)
+	        
+	        ####
+	        url <- "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv"
+	        data_csv <-tempfile()
+	        
+	        download.file(url=url, destfile=data_csv)
+	        
+	        
+	        ####
+	        
+	        
+	      })
+	    
+	   # v <- input$goButton
+	     # print(u)
+	     # print(v)
 	      layer <- input$layer
 	      regione <- input$regione
 	      if (length(regione)==0) regione <- "Tutte"

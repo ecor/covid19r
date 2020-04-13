@@ -8,7 +8,10 @@ covid19Italy(file, regione = "Lombardia", start_date = NA,
   end_date = NA, layer = c("lA0_tamponi", "lA1_positivi",
   "lA2_positivi_dimessi", "lB2_attualmente_positivi",
   "lB3_attualmente_ospedalizzati", "lB4_terapia_intensiva",
-  "lC5_deceduti"))
+  "lC5_deceduti"), percscale = 0.25, maxperc = "auto",
+  pop = read.table(system.file("demography/italy/data/popolazione.csv",
+  package = "covid19r"), sep = ",", header = TRUE, quote = ""),
+  prevalence = FALSE)
 }
 \arguments{
 \item{file}{file (CSV format) Genetsally available on \url{https://github.com/pcm-dpc/COVID-19/blob/master/dati-regioni/dpc-covid19-ita-regioni.csv}}
@@ -18,6 +21,14 @@ covid19Italy(file, regione = "Lombardia", start_date = NA,
 \item{start_date, end_date}{start and dates (optinal) for x axis}
 
 \item{layer}{layer that can be plotted. See defauls values.}
+
+\item{percscale}{scale of percenteage axis (secondary axis). Numerical value between 0 and 1.}
+
+\item{maxperc}{perecentage that is plotted for each trend.}
+
+\item{pop}{data frame containg population data for each ragion. See default. Source: ISTAT.}
+
+\item{prevalence}{logical valus. If code{FALSE} (default) output values refer to the number of cases / people, if it is \code{TRUE} output values refer to prevalence (cases per 1000 inhabitants).}
 }
 \description{
 Coovid19 Epidemic in a region or a group of regions of Italy
@@ -57,6 +68,11 @@ start_date=as.Date("2020-03-06"),end_date=as.Date("2020-03-12"))
 ## To remove the non-positive tessted cases ("lA0_tamponi")
 layer=c("lA0_tamponi","lA1_positivi","lA2_positivi_dimessi","lB2_attualmente_positivi","lB3_attualmente_ospedalizzati","lB4_terapia_intensiva","lC5_deceduti")
 out <- covid19Italy(file=out_csv,regione="Lombardia",layer=layer[-1])
+
+## prevalence (epidemiology)
+
+ pop <- read.table(system.file('demography/italy/data/popolazione.csv',package="covid19r"),sep=',',header=TRUE)
+	out <- covid19Italy(file=out_csv,regione=nord,prevalence=TRUE)
 
 
 }

@@ -5,6 +5,11 @@ NULL
 #' @param regione name of the Italian Region , e.g. \code{"Lombardia"}. Please see examples for correct Italian Region names.
 #' @param start_date,end_date start and dates (optinal) for x axis  
 #' @param layer layer that can be plotted. See defauls values.
+#' @param percscale scale of percenteage axis (secondary axis). Numerical value between 0 and 1. 
+#' @param maxperc perecentage that is plotted for each trend. 
+#' @param pop data frame containg population data for each ragion. See default. Source: ISTAT.  
+#' @param prevalence logical valus. If code{FALSE} (default) output values refer to the number of cases / people, if it is \code{TRUE} output values refer to prevalence (cases per 1000 inhabitants).
+#' 
 #' @export
 #' 
 #' @importFrom stringr str_sub
@@ -53,10 +58,15 @@ NULL
 #' layer=c("lA0_tamponi","lA1_positivi","lA2_positivi_dimessi","lB2_attualmente_positivi","lB3_attualmente_ospedalizzati","lB4_terapia_intensiva","lC5_deceduti")
 #' out <- covid19Italy(file=out_csv,regione="Lombardia",layer=layer[-1])
 #' 
+#' ## prevalence (epidemiology)
+#' 
+#'  pop <- read.table(system.file('demography/italy/data/popolazione.csv',package="covid19r"),sep=',',header=TRUE)
+#' 	out <- covid19Italy(file=out_csv,regione=nord,prevalence=TRUE)
+#' 
 #' 
 covid19Italy <- function(file,regione="Lombardia",start_date=NA,end_date=NA,
-layer=c("lA0_tamponi","lA1_positivi","lA2_positivi_dimessi","lB2_attualmente_positivi","lB3_attualmente_ospedalizzati","lB4_terapia_intensiva","lC5_deceduti")
-) {
+layer=c("lA0_tamponi","lA1_positivi","lA2_positivi_dimessi","lB2_attualmente_positivi","lB3_attualmente_ospedalizzati","lB4_terapia_intensiva","lC5_deceduti"),
+percscale=0.25,maxperc="auto",pop=read.table(system.file('demography/italy/data/popolazione.csv',package="covid19r"),sep=',',header=TRUE,quote=""),prevalence=FALSE) {
 	
 	##
 	value <- NULL
@@ -109,6 +119,17 @@ layer=c("lA0_tamponi","lA1_positivi","lA2_positivi_dimessi","lB2_attualmente_pos
 	
 	out <- out %>% filter(region %in% regione) %>% group_by(date,variable) %>% summarize(value=sum(value)) %>% as.data.frame()
 	
+	####
+	####
+	if (prevalence==TRUE) {
+	  
+	  pops <- pop  %>% filter(N_Regione %in% regione) %>% select(Popolazione) %>% sum()
+	  out$value <- out$value/pops*1000
+	}
+	
+	
+	####
+	####
 	
 	out <- out[order(as.character(out$variable)),]
 	yrange <- range(out$value)
@@ -116,7 +137,7 @@ layer=c("lA0_tamponi","lA1_positivi","lA2_positivi_dimessi","lB2_attualmente_pos
 	ymin <- yrange[1]
 	ymean <- mean(yrange)
 	ydelta <- diff(yrange)/2
-	maxperc <- "auto"
+	oo3 <<- yrange
 	lagday <- 5
 	lockdown <- as.Date("2020-03-09")
 	#### Plotting 
@@ -149,15 +170,17 @@ layer=c("lA0_tamponi","lA1_positivi","lA2_positivi_dimessi","lB2_attualmente_pos
 	ratio <- ratio %>% melt(id="date")
 	names(ratio)[names(ratio)=="value"] <- "variation_perc"
 	##ratio <- ratio %>% filter(date %in% (max(out$date)-1:lagday+1))
-	ratio <- ratio %>% filter(date %in% (lockdown+2):max(out$date))
+	ratio <- ratio %>% filter(date %in% (lockdown-14):max(out$date))
 	if (maxperc=="auto") maxperc <- range(ratio$variation_perc,na.rm=TRUE) %>% abs() %>% max()
 	if (maxperc>100) maxperc <- 100
 	
 	out <- full_join(out,ratio)
 	
+	out$variation_perc[out$variation_perc>maxperc] <- maxperc
+	out$variation_perc[out$variation_perc<(-maxperc)] <- -maxperc
 	
 	out$plotted_variation_perc <- (out$variation_perc)*ydelta/maxperc+ymean
-	variation_perc_breaks <- out$variation_perc[which(out$date==max(out$date))] %>% c(as.integer(c(-1,-0.5,0,0.5,1)*maxperc)) %>% sort()
+	variation_perc_breaks <- out$variation_perc[which(out$date==max(out$date))] %>% c(as.integer(seq(from=-1,to=1,by=percscale)*maxperc)) %>% sort()
 	breaks_y <- out$value[which(out$date==max(out$date))] %>% rev()  %>% cumsum() %>% sort()
 	
 	breaks_x <- out$date %>% unique() %>% sort()
@@ -175,11 +198,34 @@ layer=c("lA0_tamponi","lA1_positivi","lA2_positivi_dimessi","lB2_attualmente_pos
 	##gg <- gg+
 	##gg <- gg+scale_y_log10()
 	
+	oo1 <<- variation_perc_breaks
 	
-	gg <- gg+scale_y_continuous(breaks=breaks_y,sec.axis = sec_axis(~ . *maxperc/ydelta-maxperc/ydelta*ymean,breaks=variation_perc_breaks,name="Aumenti Giornalieri [%]"))
+	oo2 <<- breaks_y
+	###
+	dtyprec <- 100
+	
+	###
+	nbb <- 5
+	dbreaks_y0 <- 10^(as.integer(log10(max(breaks_y))))/nbb
+  breaks_y0 <- seq(from=0,to=max(breaks_y),by=dbreaks_y0)
+ ## breaks_x <- out$date %>% unique() %>% sort()
+  ii_labels_y0 <- breaks_y0 %>% extract(as.numeric(breaks_y0-breaks_y0[1])%%(dbreaks_y0*nbb)==0)
+  labels_y0 <- breaks_y0 %>% as.character()
+  labels_y0[!(breaks_y0 %in% ii_labels_y0)] <- ""
+  
+  
+	gg <- gg+scale_y_continuous(breaks=breaks_y0,labels=labels_y0,minor_breaks=breaks_y,sec.axis = sec_axis(~ . *maxperc/ydelta-maxperc/ydelta*ymean,breaks=variation_perc_breaks,name="Aumenti Giornalieri [%]"))
 	gg <- gg+scale_x_date(breaks=breaks_x,labels=labels_x)
-	
-	gg <- gg+xlab("Tempo")+ylab("Persone")+ggtitle(sprintf("Casi in %s",paste(regione,collapse=",")))
+if (prevalence==TRUE) {
+  
+  ylabt <- "Prevalenza (Casi su 1000 abitanti)"
+  
+} else {
+  
+  ylabt <- "Casi / Persone"
+  
+}
+	gg <- gg+xlab("Tempo")+ylab(ylabt)+ggtitle(sprintf("Casi in %s",paste(regione,collapse=",")))
 	
 	attr(out,"ggplot") <- gg
 	return(out)
